@@ -26,6 +26,24 @@ describe('fetchMenu', () => {
 
     await expect(fetchMenu('http://example.com')).rejects.toBeInstanceOf(ApiError);
   });
+
+  it('throws ApiError when fetch rejects (network failure)', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('network down'));
+
+    await expect(fetchMenu('http://example.com')).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('throws ApiError when the response body is not valid JSON', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new Error('malformed body');
+      },
+    } as unknown as Response);
+
+    await expect(fetchMenu('http://example.com')).rejects.toBeInstanceOf(ApiError);
+  });
 });
 
 describe('submitOrder', () => {
