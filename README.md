@@ -1,8 +1,12 @@
-# Carta Menú
+# Fuego Fast
 
-Menú de restaurante con carrito de compras y Google Sheets como backend (take-home).
+Carta digital de comida rápida casual con carrito de compras y Google Sheets como backend (take-home).
 
 **URL live:** _pendiente de deploy — reemplazar tras publicar en Vercel/Netlify/GitHub Pages_
+
+## Marca
+
+"Fuego Fast" — fast food casual moderno. Paleta negro `#161616` / naranja `#ff5a1f` / fondo cálido `#f4f1ee`, tipografía sans-serif bold en headers, copy corto y directo ("Armá tu pedido", "Mandar pedido").
 
 ## Stack
 
@@ -28,3 +32,17 @@ Menú de restaurante con carrito de compras y Google Sheets como backend (take-h
 ## Con otra hora
 
 Agregaría manejo de errores más robusto en el POST (reintentos, estado de orden pendiente persistido en localStorage por si falla la red), recalcularía el total server-side en Apps Script contra los precios reales del Sheet, y sumaría un test simple (Vitest) para la lógica del carrito extraída a un módulo separado.
+
+## Plan
+
+Hecho:
+- [x] Scaffold Astro estático.
+- [x] Apps Script `doGet`/`doPost` (`apps-script/Code.gs`).
+- [x] Página con menú, carrito client-side y envío de orden (`src/pages/index.astro`).
+- [x] Identidad de marca "Fuego Fast" aplicada (paleta, tipografía, copy).
+- [x] README con setup, supuestos y "con otra hora".
+
+Pendiente (pasos operativos, no de código):
+- [ ] Crear el Google Sheet real con pestañas `Menu`/`Orders` y pegar `apps-script/Code.gs`.
+- [ ] Deploy en Vercel/Netlify con `PUBLIC_APPS_SCRIPT_URL` seteada.
+- [ ] Reemplazar `chat.md` con la transcripción real y poner la URL live acá arriba.
