@@ -1,0 +1,3 @@
+# chat.md
+
+<!-- Placeholder transcript. -->
