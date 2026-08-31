@@ -16,7 +16,8 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
     main { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; display: grid; grid-template-columns: 1fr; gap: 2rem; }
     @media (min-width: 800px) { main { grid-template-columns: 2fr 1fr; align-items: start; } }
     #menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-    .card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; }
+    .card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; overflow: hidden; }
+    .card img { width: calc(100% + 2rem); margin: -1rem -1rem 0; aspect-ratio: 4/3; object-fit: cover; }
     .card h3 { margin: 0; text-transform: uppercase; font-size: 1rem; }
     .card p { margin: 0; color: #555; font-size: .9rem; flex: 1; }
     .card .price { font-weight: bold; color: var(--accent); }
@@ -119,6 +120,7 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
           .map(
             (item) => `
           <div class="card">
+            ${item.image ? `<img src="${item.image}" alt="${item.name}" loading="lazy" />` : ''}
             <h3>${item.name}</h3>
             <p>${item.description || ''}</p>
             <div class="price">${money(item.price)}</div>
