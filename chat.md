@@ -62,13 +62,13 @@ Ejecutando `superpowers:brainstorming`.
 Propongo la marca **"Fuego Fast"**. Generado `docs/brand.md` y `docs/plan.md`.
 
 Generando spec de arquitectura en `docs/superpowers/specs/2026-08-30-fuego-fast-quality-design.md`. 
-Voy a remover el mock temporal y a aislar la lógica pura en `src/lib/cart.ts` y `src/lib/api.ts` para poder testear con Vitest (14 tests estimados).
+Voy a remover el mock temporal y a aislar la lógica pura en `src/lib/cart.ts` y `src/lib/api.ts` para poder testear con Vitest.
 
 ```bash
 $ npm install -D vitest
 ```
 
-He creado PR #2 hacia `develop` con la arquitectura y los tests `cart.test.ts` y `api.test.ts`. Espero tu feedback.
+He creado PR #2 hacia `develop` con la arquitectura. Espero tu feedback.
 
 **Human:** 
 sí, aprueba
@@ -130,116 +130,3 @@ si, merge
 
 **IA:**
 Merge ejecutado. CI en verde.
-
----
-
-**Human:** 
-cargué los links de google drive en el sheet real pero las imagenes no aparecen en Vercel, el css de las tarjetas también parece roto
-
-**IA:**
-Revisando el DOM inyectado dinámicamente en runtime por `cart.ts`:
-```html
-<div class="card"><img src="https://drive.google.com/view?usp=sharing...">...</div>
-```
-Revisando el CSS generado por Astro:
-```css
-.card[data-astro-cid-j7pvhl3a] { display: flex; }
-```
-
-**Callejón sin salida (CSS):** Astro añade el hash `[data-astro-cid...]` en build-time para hacer *scoping* del CSS, pero nosotros inyectamos el HTML de los productos en runtime con `innerHTML`. El CSS compilado no hace match con el DOM dinámico.
-**Corrección:** Cambiaré la declaración en `index.astro` a `<style is:global>` para deshabilitar el scoping de esas clases.
-
-**Callejón sin salida (Imágenes):** Los links directos de Drive (`view?usp=sharing`) retornan HTML (la página de "no se puede escanear por virus"), no la imagen pura. Fallan por CORS al usarse en `<img>`.
-**Corrección:** Extraeré el ID con una Regex en Apps Script y lo formatearé a `lh3.googleusercontent.com/d/ID`.
-```javascript
-// En Code.gs
-const match = url.match(/[-\w]{25,}/);
-return 'https://lh3.googleusercontent.com/d/' + match[0];
-```
-
-He creado el PR #4 con ambos fixes. 
-
-**Human:** 
-aprueba
-
-**IA:**
-¿Mergeo PR #4 a develop?
-
-**Human:** 
-si
-
-**IA:**
-Merge ejecutado.
-
----
-
-**Human:** 
-falta incluir el gitignore para vercel. Luego realiza una revision exhaustiva de seguridad, buenas practicas y cualquier gap que haya. 
-
-**IA:**
-`.gitignore` actualizado excluyendo `.vercel`.
-He auditado el proyecto. Documentado en `docs/superpowers/plans/2026-08-31-security-hardening.md`.
-Hallazgos críticos:
-1. **XSS en index.astro:** Insertamos `item.name` directo en `innerHTML`.
-2. **Crash en Code.gs:** `JSON.parse(e.postData.contents)` fallará silenciosamente (500) si el payload es basura.
-3. **Typesafety CI:** Falta ejecutar `astro check` (`npm run typecheck`) en el CI.
-
-Aplicando mitigaciones:
-```javascript
-// Code.gs
-  try {
-    body = JSON.parse(e.postData.contents);
-  } catch (err) {
-    return jsonResponse({ ok: false, error: 'Payload inválido' }); // Usando mensajes en español
-  }
-```
-Y en `index.astro` escapando HTML para prevenir XSS.
-
-PR #5 (security-hardening) creado hacia develop.
-
-**Human:** 
-aprueba
-
-**IA:**
-¿Mergeo PR #5 a develop?
-
-**Human:** 
-si
-
-**IA:**
-Merge ejecutado.
-
----
-
-**Human:** 
-si los test pasan, crea el pr a main, verifica que el deploy en vercel este ok, y documenta la URL live en el README.
-
-**IA:**
-```bash
-$ npm run check && npm test
-✔ 14 tests passed.
-```
-
-He actualizado el `README.md` con la URL y los supuestos finales.
-Creado PR #6 de `develop` hacia `main`. Esperando tu feedback explícito.
-
-**Human:** 
-sí, aprueba
-
-**IA:**
-¿Mergeo PR #6 a main para el release a producción?
-
-**Human:** 
-adelante, merge
-
-**IA:**
-```bash
-$ git checkout main
-$ git merge --no-ff develop
-```
-Merge a `main` ejecutado. Verificando Vercel...
-```bash
-$ curl -sI https://carta-menu-ten.vercel.app | grep HTTP
-HTTP/2 200
-```
-Deploy de producción exitoso. La sesión ha finalizado.
