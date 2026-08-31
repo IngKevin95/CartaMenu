@@ -58,46 +58,53 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
   </main>
 
   <script define:vars={{ APPS_SCRIPT_URL }}>
-    const cart = {}; // id -> { id, name, price, qty }
-    const menuEl = document.getElementById('menu');
-    const cartItemsEl = document.getElementById('cart-items');
-    const totalEl = document.getElementById('total');
-    const submitBtn = document.getElementById('submit-btn');
-    const statusEl = document.getElementById('status');
-    const form = document.getElementById('order-form');
+    window.__APPS_SCRIPT_URL__ = APPS_SCRIPT_URL;
+  </script>
+  <script>
+    import { addItem, changeQty, total, toOrderPayload } from '../lib/cart';
+    import { fetchMenu, submitOrder } from '../lib/api';
 
-    function money(n) {
+    const APPS_SCRIPT_URL = (window as any).__APPS_SCRIPT_URL__;
+    let cart: ReturnType<typeof addItem> = {};
+
+    const menuEl = document.getElementById('menu')!;
+    const cartItemsEl = document.getElementById('cart-items')!;
+    const totalEl = document.getElementById('total')!;
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const statusEl = document.getElementById('status')!;
+    const form = document.getElementById('order-form') as HTMLFormElement;
+
+    function money(n: number) {
       return `$${Number(n).toFixed(2)}`;
     }
 
     function renderCart() {
       const items = Object.values(cart);
       cartItemsEl.innerHTML = items.length
-        ? items.map(i => `
-          <li data-id="${i.id}">
-            <span>${i.name} x${i.qty}</span>
-            <span>
-              ${money(i.price * i.qty)}
-              <button data-action="dec" data-id="${i.id}">−</button>
-              <button data-action="inc" data-id="${i.id}">+</button>
-            </span>
-          </li>`).join('')
+        ? items
+            .map(
+              (i) => `
+            <li data-id="${i.id}">
+              <span>${i.name} x${i.qty}</span>
+              <span>
+                ${money(i.price * i.qty)}
+                <button data-action="dec" data-id="${i.id}">−</button>
+                <button data-action="inc" data-id="${i.id}">+</button>
+              </span>
+            </li>`
+            )
+            .join('')
         : '<li class="empty">Vacío</li>';
-      const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-      totalEl.textContent = `Total: ${money(total)}`;
+      totalEl.textContent = `Total: ${money(total(cart))}`;
       submitBtn.disabled = items.length === 0;
     }
 
     cartItemsEl.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
+      const btn = (e.target as HTMLElement).closest('button');
       if (!btn) return;
-      const { id, action } = btn.dataset;
-      if (!cart[id]) return;
-      if (action === 'inc') cart[id].qty += 1;
-      if (action === 'dec') {
-        cart[id].qty -= 1;
-        if (cart[id].qty <= 0) delete cart[id];
-      }
+      const { id, action } = (btn as HTMLElement).dataset;
+      if (!id) return;
+      cart = changeQty(cart, id, action === 'inc' ? 1 : -1);
       renderCart();
     });
 
@@ -107,27 +114,30 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
         return;
       }
       try {
-        const res = await fetch(APPS_SCRIPT_URL);
-        const items = await res.json();
-        menuEl.innerHTML = items.map(item => `
+        const items = await fetchMenu(APPS_SCRIPT_URL);
+        menuEl.innerHTML = items
+          .map(
+            (item) => `
           <div class="card">
             <h3>${item.name}</h3>
             <p>${item.description || ''}</p>
             <div class="price">${money(item.price)}</div>
             <button data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">Sumar</button>
           </div>
-        `).join('');
+        `
+          )
+          .join('');
       } catch (err) {
-        menuEl.innerHTML = `<p class="empty">No se pudo cargar el menú: ${err.message}</p>`;
+        menuEl.innerHTML = `<p class="empty">No se pudo cargar el menú: ${(err as Error).message}</p>`;
       }
     }
 
     menuEl.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-id]');
+      const btn = (e.target as HTMLElement).closest('button[data-id]') as HTMLElement | null;
       if (!btn) return;
       const { id, name, price } = btn.dataset;
-      if (!cart[id]) cart[id] = { id, name, price: Number(price), qty: 0 };
-      cart[id].qty += 1;
+      if (!id || !name || !price) return;
+      cart = addItem(cart, { id, name, price: Number(price) });
       renderCart();
     });
 
@@ -135,29 +145,19 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
       e.preventDefault();
       const items = Object.values(cart);
       if (!items.length) return;
-      const name = document.getElementById('customer-name').value.trim();
-      const email = document.getElementById('customer-email').value.trim();
-      const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+      const name = (document.getElementById('customer-name') as HTMLInputElement).value.trim();
+      const email = (document.getElementById('customer-email') as HTMLInputElement).value.trim();
+      const payload = toOrderPayload(cart, { name, email });
       submitBtn.disabled = true;
       statusEl.textContent = 'Enviando…';
       try {
-        await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            name,
-            email,
-            items: items.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
-            total,
-            timestamp: new Date().toISOString(),
-          }),
-        });
+        await submitOrder(APPS_SCRIPT_URL, payload);
         statusEl.textContent = '¡Pedido en camino a cocina!';
-        Object.keys(cart).forEach(k => delete cart[k]);
+        cart = {};
         renderCart();
         form.reset();
       } catch (err) {
-        statusEl.textContent = `Error al enviar: ${err.message}`;
+        statusEl.textContent = `Error al enviar: ${(err as Error).message}`;
       } finally {
         submitBtn.disabled = Object.keys(cart).length === 0;
       }
