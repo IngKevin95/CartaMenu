@@ -5,7 +5,7 @@
 const MENU_SHEET = 'Menu';
 const ORDERS_SHEET = 'Orders';
 
-// Menu!A:D = id | name | description | price
+// Menu!A:E = id | name | description | price | image
 function doGet() {
   const sheet = SpreadsheetApp.getActive().getSheetByName(MENU_SHEET);
   const rows = sheet.getDataRange().getValues();
@@ -17,6 +17,7 @@ function doGet() {
       name: r[1],
       description: r[2],
       price: Number(r[3]),
+      image: r[4] || '',
     }));
   return jsonResponse(items);
 }
