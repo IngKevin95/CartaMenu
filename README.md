@@ -2,7 +2,7 @@
 
 Carta digital de comida rápida casual con carrito de compras y Google Sheets como backend (take-home).
 
-**URL live:** _pendiente de deploy — reemplazar tras publicar en Vercel/Netlify/GitHub Pages_
+**URL live:** https://carta-menu-ten.vercel.app
 
 ## Marca
 
@@ -29,7 +29,7 @@ Carta digital de comida rápida casual con carrito de compras y Google Sheets co
 - No hay autenticación de cliente: el email en el formulario es solo un dato de contacto, no se valida contra nada.
 - `doPost` no valida stock ni duplicados — cualquier POST bien formado agrega una fila.
 - El precio se confía tal cual viene del Sheet (no hay recalculo server-side); para un MVP de take-home es aceptable, en producción el total debería recalcularse en `doPost` a partir del Sheet, no del carrito del cliente.
-- No hay tests automatizados dado el alcance de una hora; se validó manualmente el flujo cargar menú → agregar/quitar → enviar orden.
+- 14 tests unitarios (Vitest) cubren `src/lib/cart.ts` y `src/lib/api.ts`; el wiring de DOM en `index.astro` se validó manualmente en el navegador, no tiene tests automatizados.
 
 ## Con otra hora
 
@@ -44,7 +44,6 @@ Hecho:
 - [x] Identidad de marca "Fuego Fast" aplicada (paleta, tipografía, copy).
 - [x] README con setup, supuestos y "con otra hora".
 
-Pendiente (pasos operativos, no de código):
-- [ ] Crear el Google Sheet real con pestañas `Menu`/`Orders` y pegar `apps-script/Code.gs`.
-- [ ] Deploy en Vercel/Netlify con `PUBLIC_APPS_SCRIPT_URL` seteada.
-- [ ] Reemplazar `chat.md` con la transcripción real y poner la URL live acá arriba.
+- [x] Crear el Google Sheet real con pestañas `Menu`/`Orders` y pegar `apps-script/Code.gs`.
+- [x] Deploy en Vercel con `PUBLIC_APPS_SCRIPT_URL` seteada.
+- [x] `chat.md` con la transcripción real y URL live en este README.
