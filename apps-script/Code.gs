@@ -45,8 +45,8 @@ function doPost(e) {
   if (typeof body.name !== 'string' || body.name.trim() === '') {
     return jsonResponse({ ok: false, error: 'Falta el nombre del cliente' });
   }
-  if (typeof body.email !== 'string' || body.email.trim() === '') {
-    return jsonResponse({ ok: false, error: 'Falta el email del cliente' });
+  if (typeof body.email !== 'string' || !/^\S+@\S+\.\S+$/.test(body.email.trim())) {
+    return jsonResponse({ ok: false, error: 'Email inválido' });
   }
   if (!Array.isArray(body.items) || body.items.length === 0) {
     return jsonResponse({ ok: false, error: 'El carrito está vacío' });
