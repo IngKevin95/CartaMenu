@@ -3,6 +3,7 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
+  image?: string;
 }
 
 export class ApiError extends Error {

@@ -11,15 +11,17 @@ Carta digital de comida rápida casual con carrito de compras y Google Sheets co
 ## Stack
 
 - Astro (estático, sin frameworks JS adicionales — el carrito es JS vanilla en un `<script>`).
-- Google Sheets: pestaña `Menu` (id, name, description, price) y pestaña `Orders` (timestamp, name, email, items JSON, total).
+- Google Sheets: pestaña `Menu` (id, name, description, price, image) y pestaña `Orders` (timestamp, name, email, items JSON, total).
 - Google Apps Script Web App (`apps-script/Code.gs`) como puente: `doGet` devuelve el menú, `doPost` agrega una fila a `Orders`.
 
 ## Setup
 
-1. Crear un Google Sheet con dos pestañas: `Menu` (header: id, name, description, price) y `Orders` (header: timestamp, name, email, items, total).
-2. Extensiones → Apps Script → pegar `apps-script/Code.gs` → Implementar → Aplicación web (ejecutar como Yo, acceso Cualquiera). Copiar la URL `/exec`.
-3. Copiar `.env.example` a `.env` y setear `PUBLIC_APPS_SCRIPT_URL` con esa URL.
-4. `npm install && npm run dev`.
+1. Crear un Google Sheet con dos pestañas: `Menu` (header: id, name, description, price, image) y `Orders` (header: timestamp, name, email, items, total).
+2. Cargar productos en `Menu` — podés importar `menu-sample.csv` de este repo (Archivo → Importar → Subir, "Reemplazar hoja actual" sobre `Menu`) como punto de partida.
+3. La columna `image` es una URL pública a la foto del producto (subila a cualquier hosting gratuito — Imgur, Cloudinary free tier, o un archivo de Google Drive con "Cualquier usuario con el enlace"). Es opcional: si queda vacía, la tarjeta se muestra sin imagen.
+4. Extensiones → Apps Script → pegar `apps-script/Code.gs` → Implementar → Aplicación web (ejecutar como Yo, acceso Cualquiera). Copiar la URL `/exec`.
+5. Copiar `.env.example` a `.env` y setear `PUBLIC_APPS_SCRIPT_URL` con esa URL.
+6. `npm install && npm run dev`.
 
 ## Supuestos
 
