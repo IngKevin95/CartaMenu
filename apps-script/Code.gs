@@ -23,7 +23,12 @@ function doGet() {
 
 // Orders!A:E = timestamp | name | email | items(JSON) | total
 function doPost(e) {
-  const body = JSON.parse(e.postData.contents);
+  let body;
+  try {
+    body = JSON.parse(e.postData.contents);
+  } catch (err) {
+    return jsonResponse({ ok: false, error: 'Payload inválido' });
+  }
 
   if (typeof body.name !== 'string' || body.name.trim() === '') {
     return jsonResponse({ ok: false, error: 'Falta el nombre del cliente' });
