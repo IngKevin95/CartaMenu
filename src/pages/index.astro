@@ -139,7 +139,7 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
           )
           .join('');
       } catch (err) {
-        menuEl.innerHTML = `<p class="empty">No se pudo cargar el menú: ${(err as Error).message}</p>`;
+        menuEl.innerHTML = `<p class="empty">No se pudo cargar el menú: ${escapeHtml((err as Error).message)}</p>`;
       }
     }
 
