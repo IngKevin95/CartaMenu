@@ -1,0 +1,169 @@
+---
+const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fuego Fast</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; --ink: #161616; --accent: #ff5a1f; --bg: #f4f1ee; }
+    body { margin: 0; background: var(--bg); color: var(--ink); }
+    header { padding: 1.5rem 1rem; text-align: center; background: var(--ink); color: #fff; }
+    header h1 { margin: 0; text-transform: uppercase; letter-spacing: .05em; }
+    header p { margin: .3rem 0 0; color: #d8d8d8; }
+    main { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; display: grid; grid-template-columns: 1fr; gap: 2rem; }
+    @media (min-width: 800px) { main { grid-template-columns: 2fr 1fr; align-items: start; } }
+    #menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; }
+    .card h3 { margin: 0; text-transform: uppercase; font-size: 1rem; }
+    .card p { margin: 0; color: #555; font-size: .9rem; flex: 1; }
+    .card .price { font-weight: bold; color: var(--accent); }
+    .card button { cursor: pointer; padding: .5rem; border: none; border-radius: 6px; background: var(--accent); color: #fff; font-weight: bold; text-transform: uppercase; font-size: .8rem; }
+    #cart { position: sticky; top: 1rem; background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 1rem; }
+    #cart h2 { text-transform: uppercase; font-size: 1rem; }
+    #cart ul { list-style: none; padding: 0; margin: 0; }
+    #cart li { display: flex; justify-content: space-between; align-items: center; padding: .4rem 0; border-bottom: 1px solid #f0f0f0; gap: .5rem; }
+    #cart li button { cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 4px; width: 1.6rem; }
+    #total { font-weight: bold; font-size: 1.1rem; margin-top: .5rem; }
+    #order-form { margin-top: 1rem; display: grid; gap: .5rem; }
+    #order-form input { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; }
+    #order-form button { padding: .6rem; border: none; border-radius: 6px; background: var(--ink); color: #fff; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: .85rem; }
+    #order-form button:disabled { background: #999; cursor: not-allowed; }
+    #status { font-size: .85rem; margin-top: .5rem; }
+    .empty { color: #888; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Fuego Fast</h1>
+    <p>Armá tu pedido, mandalo directo a cocina.</p>
+  </header>
+  <main>
+    <section>
+      <div id="menu">Cargando menú…</div>
+    </section>
+    <aside id="cart">
+      <h2>Tu pedido</h2>
+      <ul id="cart-items"><li class="empty">Vacío</li></ul>
+      <div id="total">Total: $0.00</div>
+      <form id="order-form">
+        <input type="text" id="customer-name" placeholder="Nombre" required />
+        <input type="email" id="customer-email" placeholder="Email" required />
+        <button type="submit" id="submit-btn" disabled>Mandar pedido</button>
+      </form>
+      <div id="status"></div>
+    </aside>
+  </main>
+
+  <script define:vars={{ APPS_SCRIPT_URL }}>
+    window.__APPS_SCRIPT_URL__ = APPS_SCRIPT_URL;
+  </script>
+  <script>
+    import { addItem, changeQty, total, toOrderPayload } from '../lib/cart';
+    import { fetchMenu, submitOrder } from '../lib/api';
+
+    const APPS_SCRIPT_URL = (window as any).__APPS_SCRIPT_URL__;
+    let cart: ReturnType<typeof addItem> = {};
+
+    const menuEl = document.getElementById('menu')!;
+    const cartItemsEl = document.getElementById('cart-items')!;
+    const totalEl = document.getElementById('total')!;
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const statusEl = document.getElementById('status')!;
+    const form = document.getElementById('order-form') as HTMLFormElement;
+
+    function money(n: number) {
+      return `$${Number(n).toFixed(2)}`;
+    }
+
+    function renderCart() {
+      const items = Object.values(cart);
+      cartItemsEl.innerHTML = items.length
+        ? items
+            .map(
+              (i) => `
+            <li data-id="${i.id}">
+              <span>${i.name} x${i.qty}</span>
+              <span>
+                ${money(i.price * i.qty)}
+                <button data-action="dec" data-id="${i.id}">−</button>
+                <button data-action="inc" data-id="${i.id}">+</button>
+              </span>
+            </li>`
+            )
+            .join('')
+        : '<li class="empty">Vacío</li>';
+      totalEl.textContent = `Total: ${money(total(cart))}`;
+      submitBtn.disabled = items.length === 0;
+    }
+
+    cartItemsEl.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('button');
+      if (!btn) return;
+      const { id, action } = (btn as HTMLElement).dataset;
+      if (!id) return;
+      cart = changeQty(cart, id, action === 'inc' ? 1 : -1);
+      renderCart();
+    });
+
+    async function loadMenu() {
+      if (!APPS_SCRIPT_URL) {
+        menuEl.innerHTML = '<p class="empty">Falta configurar PUBLIC_APPS_SCRIPT_URL.</p>';
+        return;
+      }
+      try {
+        const items = await fetchMenu(APPS_SCRIPT_URL);
+        menuEl.innerHTML = items
+          .map(
+            (item) => `
+          <div class="card">
+            <h3>${item.name}</h3>
+            <p>${item.description || ''}</p>
+            <div class="price">${money(item.price)}</div>
+            <button data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">Sumar</button>
+          </div>
+        `
+          )
+          .join('');
+      } catch (err) {
+        menuEl.innerHTML = `<p class="empty">No se pudo cargar el menú: ${(err as Error).message}</p>`;
+      }
+    }
+
+    menuEl.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('button[data-id]') as HTMLElement | null;
+      if (!btn) return;
+      const { id, name, price } = btn.dataset;
+      if (!id || !name || !price) return;
+      cart = addItem(cart, { id, name, price: Number(price) });
+      renderCart();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const items = Object.values(cart);
+      if (!items.length) return;
+      const name = (document.getElementById('customer-name') as HTMLInputElement).value.trim();
+      const email = (document.getElementById('customer-email') as HTMLInputElement).value.trim();
+      const payload = toOrderPayload(cart, { name, email });
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Enviando…';
+      try {
+        await submitOrder(APPS_SCRIPT_URL, payload);
+        statusEl.textContent = '¡Pedido en camino a cocina!';
+        cart = {};
+        renderCart();
+        form.reset();
+      } catch (err) {
+        statusEl.textContent = `Error al enviar: ${(err as Error).message}`;
+      } finally {
+        submitBtn.disabled = Object.keys(cart).length === 0;
+      }
+    });
+
+    loadMenu();
+  </script>
+</body>
+</html>
