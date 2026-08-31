@@ -75,6 +75,15 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
     const statusEl = document.getElementById('status')!;
     const form = document.getElementById('order-form') as HTMLFormElement;
 
+    function escapeHtml(value: string): string {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function money(n: number) {
       return `$${Number(n).toFixed(2)}`;
     }
@@ -86,7 +95,7 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
             .map(
               (i) => `
             <li data-id="${i.id}">
-              <span>${i.name} x${i.qty}</span>
+              <span>${escapeHtml(i.name)} x${i.qty}</span>
               <span>
                 ${money(i.price * i.qty)}
                 <button data-action="dec" data-id="${i.id}">−</button>
@@ -120,17 +129,17 @@ const APPS_SCRIPT_URL = import.meta.env.PUBLIC_APPS_SCRIPT_URL || '';
           .map(
             (item) => `
           <div class="card">
-            ${item.image ? `<img src="${item.image}" alt="${item.name}" loading="lazy" />` : ''}
-            <h3>${item.name}</h3>
-            <p>${item.description || ''}</p>
+            ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" loading="lazy" />` : ''}
+            <h3>${escapeHtml(item.name)}</h3>
+            <p>${escapeHtml(item.description || '')}</p>
             <div class="price">${money(item.price)}</div>
-            <button data-id="${item.id}" data-name="${item.name}" data-price="${item.price}">Sumar</button>
+            <button data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}">Sumar</button>
           </div>
         `
           )
           .join('');
       } catch (err) {
-        menuEl.innerHTML = `<p class="empty">No se pudo cargar el menú: ${(err as Error).message}</p>`;
+        menuEl.innerHTML = `<p class="empty">No se pudo cargar el menú: ${escapeHtml((err as Error).message)}</p>`;
       }
     }
 
