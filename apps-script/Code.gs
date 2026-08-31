@@ -18,21 +18,43 @@ function doGet() {
       description: r[2],
       price: Number(r[3]),
     }));
-  return ContentService.createTextOutput(JSON.stringify(items))
-    .setMimeType(ContentService.MimeType.JSON);
+  return jsonResponse(items);
 }
 
 // Orders!A:E = timestamp | name | email | items(JSON) | total
 function doPost(e) {
-  const body = JSON.parse(e.postData.contents);
+  let body;
+  try {
+    body = JSON.parse(e.postData.contents);
+  } catch (err) {
+    return jsonResponse({ ok: false, error: 'Payload inválido' });
+  }
+
+  if (typeof body.name !== 'string' || body.name.trim() === '') {
+    return jsonResponse({ ok: false, error: 'Falta el nombre del cliente' });
+  }
+  if (typeof body.email !== 'string' || body.email.trim() === '') {
+    return jsonResponse({ ok: false, error: 'Falta el email del cliente' });
+  }
+  if (!Array.isArray(body.items) || body.items.length === 0) {
+    return jsonResponse({ ok: false, error: 'El carrito está vacío' });
+  }
+  if (typeof body.total !== 'number' || body.total < 0) {
+    return jsonResponse({ ok: false, error: 'Total inválido' });
+  }
+
   const sheet = SpreadsheetApp.getActive().getSheetByName(ORDERS_SHEET);
   sheet.appendRow([
     body.timestamp || new Date().toISOString(),
-    body.name || '',
-    body.email || '',
-    JSON.stringify(body.items || []),
-    body.total || 0,
+    body.name,
+    body.email,
+    JSON.stringify(body.items),
+    body.total,
   ]);
-  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+  return jsonResponse({ ok: true });
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
