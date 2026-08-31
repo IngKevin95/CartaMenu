@@ -2,7 +2,7 @@
 
 Carta digital de comida rápida casual con carrito de compras y Google Sheets como backend (take-home).
 
-**URL live:** _pendiente de deploy — reemplazar tras publicar en Vercel/Netlify/GitHub Pages_
+**URL live:** https://carta-menu-ten.vercel.app
 
 ## Marca
 
@@ -26,10 +26,18 @@ Carta digital de comida rápida casual con carrito de compras y Google Sheets co
 ## Supuestos
 
 - El id de producto en `Menu` es único y estable; se usa como key del carrito.
-- No hay autenticación de cliente: el email en el formulario es solo un dato de contacto, no se valida contra nada.
+- No hay autenticación de cliente: el email en el formulario es un dato de contacto, validado solo en formato (no se confirma que exista).
 - `doPost` no valida stock ni duplicados — cualquier POST bien formado agrega una fila.
 - El precio se confía tal cual viene del Sheet (no hay recalculo server-side); para un MVP de take-home es aceptable, en producción el total debería recalcularse en `doPost` a partir del Sheet, no del carrito del cliente.
-- No hay tests automatizados dado el alcance de una hora; se validó manualmente el flujo cargar menú → agregar/quitar → enviar orden.
+- 14 tests unitarios (Vitest) cubren `src/lib/cart.ts` y `src/lib/api.ts`; el wiring de DOM en `index.astro` se validó manualmente en el navegador, no tiene tests automatizados.
+
+## Seguridad
+
+Se corrió una auditoría manual de seguridad sobre el código. Se cerraron: XSS almacenado vía contenido del Sheet (escapado antes de renderizar), `.gitignore` sombreando `.env.example`, y validación de formato de email en `doPost`. Queda documentado como riesgo aceptado: `doPost` no valida origen/CSRF — inherente a un Apps Script Web App público sin backend propio.
+
+## CI
+
+GitHub Actions corre en cada PR hacia `develop`/`main`: `npm ci`, `npm run typecheck` (chequeo de tipos con `astro check`), `npm run build`, `npm test`.
 
 ## Con otra hora
 
@@ -44,7 +52,9 @@ Hecho:
 - [x] Identidad de marca "Fuego Fast" aplicada (paleta, tipografía, copy).
 - [x] README con setup, supuestos y "con otra hora".
 
-Pendiente (pasos operativos, no de código):
-- [ ] Crear el Google Sheet real con pestañas `Menu`/`Orders` y pegar `apps-script/Code.gs`.
-- [ ] Deploy en Vercel/Netlify con `PUBLIC_APPS_SCRIPT_URL` seteada.
-- [ ] Reemplazar `chat.md` con la transcripción real y poner la URL live acá arriba.
+- [x] Crear el Google Sheet real con pestañas `Menu`/`Orders` y pegar `apps-script/Code.gs`.
+- [x] Deploy en Vercel con `PUBLIC_APPS_SCRIPT_URL` seteada.
+- [x] `chat.md` con la transcripción real y URL live en este README.
+- [x] Arquitectura de calidad: módulos testeables, 14 tests (Vitest), CI con build+test.
+- [x] Soporte de imagen por producto y `menu-sample.csv`.
+- [x] Auditoría y hardening de seguridad (XSS, gitignore, validación de email, CI Node 22 + typecheck).
