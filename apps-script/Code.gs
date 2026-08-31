@@ -17,9 +17,20 @@ function doGet() {
       name: r[1],
       description: r[2],
       price: Number(r[3]),
-      image: r[4] || '',
+      image: normalizeDriveImageUrl(r[4]),
     }));
   return jsonResponse(items);
+}
+
+// Acepta cualquier link de "compartir" de Google Drive (view, open?id=, uc?id=)
+// y lo convierte al formato que sí renderiza dentro de un <img> sin la
+// pantalla intermedia de "no se puede escanear por virus".
+function normalizeDriveImageUrl(value) {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  const match = url.match(/[-\w]{25,}/); // el file id de Drive
+  if (!match || url.indexOf('drive.google.com') === -1) return url;
+  return 'https://lh3.googleusercontent.com/d/' + match[0];
 }
 
 // Orders!A:E = timestamp | name | email | items(JSON) | total
